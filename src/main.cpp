@@ -254,45 +254,120 @@ int main() {
 							car_s = end_path_s;
 						}
 
-						bool too_close = false;
+						bool FrontCar 			= false;
+						bool LeftCar  			= false;
+						bool RightCar 			= false;
+						double SameLaneSafeDistance = 30.0;
+						double DifferentLaneSafeDistance = 10.0;
+						bool S_Gap;
 
-						// find Ref_Velocity to use
+						// Build the Finite State Machine for the Car Motion
 						for (int i = 0; i < sensor_fusion.size(); i++)
 						{
 								// Check a car in my lane
 								float d = sensor_fusion[i][6];
-								if (d < (2 + 4*lane + 2) && d > (2 + 4*lane - 2))
+								int CarLane = -1;
+
+
+								// Check distance in order to know the adjacent cars either front or left or right		
+								if (d > 0.0 && d < 4.0)
 								{
-										double vx = sensor_fusion[i][3];
-										double vy = sensor_fusion[i][4];
-										double check_speed = sqrt(vx*vx + vy*vy);
-										double check_car_s = sensor_fusion[i][5];
+										CarLane = 0; // left Car Lane
+								}
+								else if (d > 4.0 && d < 8.0)
+								{
+										CarLane = 1; // middle Car Lane front of ego
+								}
+								else if (d > 8.0 && d < 12.0)
+								{
+										CarLane = 2; // right Car Lane
+								}
 
-										check_car_s += ((double)prev_size * 0.02*check_speed); // if using previous points can project s value outwards
+								// Test a special case that we don't need to take it into our consideration
+								// Check if there is a car on the opposite side either from the left or from the right in case we are moving in a middle
 
-										// check s values greater than current s and s gap
-										if((check_car_s > car_s) && ((check_car_s - car_s) < 30))
-										{
-												// Do some logic here, lower reference velocity so we don't crash into the car ahead.
-												// We could also raise a flag to try to change the lanes
-												//Ref_vel = 29.5;	//MPH
-												too_close = true;
+								if (d < 0.0 || d > 12.0)
+								{
+									continue;
+								} 
+								
+								double vx = sensor_fusion[i][3];
+								double vy = sensor_fusion[i][4];
+								double check_car_s = sensor_fusion[i][5];
 
-										}
-
+								double check_speed = sqrt(vx*vx + vy*vy);
+								check_car_s += ((double)prev_size * 0.02 * check_speed); // if using previous points can project s value outwards
+								
+								// Check the car lane in order to know if it is near or far from the ego var
+								if (CarLane == lane)
+								{
+									// This means that there is a car on the same lane
+									S_Gap = (check_car_s > car_s) && ((check_car_s - car_s) < SameLaneSafeDistance );
+									FrontCar |= S_Gap;
+								}
+								else if (CarLane == lane - 1)
+								{
+									// This means that there is a left car
+									S_Gap = (check_car_s > car_s - DifferentLaneSafeDistance) && ((car_s + SameLaneSafeDistance) > check_car_s);
+									LeftCar |= S_Gap;
+								}
+								else if (CarLane == lane + 1)
+								{
+									// This means that there is a right car
+									S_Gap = (check_car_s > car_s - DifferentLaneSafeDistance) && ((car_s + SameLaneSafeDistance) > check_car_s);
+									RightCar |= S_Gap;
 								}
 						}
 
-						if (too_close)
-						{	
-								Ref_vel -=0.224; 		// 5 m/S^2 as required
-						}
-						else if (Ref_vel < 49.5)
+						if (FrontCar)
 						{
-								Ref_vel += 0.224; 	// 5 m/S^2 as required
+								// Here there is a car in front of us
+								if (!LeftCar && lane > 0)
+								{
+										// We are not in the most left lane and left lane beside us is clear 
+										// so we can go to the left lane
+										lane--;  
+								}
+								else if (!RightCar && lane < 2)
+								{
+									// We are not at the most right and the right lane beside us is clear
+									// so we can go to the right lane
+									lane++; 
+								}
+								else
+								{
+									// otherwise the other two lanes beside us are not clear
+									// so we will keep on the same lane and decrease the velocity in order to avoid collison
+									Ref_vel -= 0.224; // Decelerate 
+								}
 						}
-
-
+						else
+						{
+								// This means that there is no car in front of us
+								if (lane == 0 && !RightCar)
+								{
+										// We are on the left lane and the center lane is clear
+										// We can go to the center lane 
+										lane = 1;
+								}
+								else if (lane == 2 && !LeftCar)
+								{
+										// We are on the right lane and the center lane is clear
+										// We can go to the center lane
+										lane = 1;
+								}
+								else
+								{
+										// We are now on the center lane
+										// We cane increment the velocity and keep it less than the maximum allowable speed
+										if (Ref_vel < 49.5)
+										{
+											Ref_vel += 0.224; // Accelerate
+										}
+										
+										
+								}
+						}
 
           	
 
