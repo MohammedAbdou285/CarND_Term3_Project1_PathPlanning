@@ -205,7 +205,7 @@ int main() {
 	int lane = 1;
 
 	// Put a Reference velocity taget
-	double Ref_vel = 49.5; // MPH
+	double Ref_vel = 0.0; // MPH
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&lane,&Ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
@@ -273,12 +273,25 @@ int main() {
 										// check s values greater than current s and s gap
 										if((check_car_s > car_s) && ((check_car_s - car_s) < 30))
 										{
-												Ref_vel = 29.5;	//MPH
+												// Do some logic here, lower reference velocity so we don't crash into the car ahead.
+												// We could also raise a flag to try to change the lanes
+												//Ref_vel = 29.5;	//MPH
+												too_close = true;
 
 										}
 
 								}
 						}
+
+						if (too_close)
+						{	
+								Ref_vel -=0.224; 		// 5 m/S^2 as required
+						}
+						else if (Ref_vel < 49.5)
+						{
+								Ref_vel += 0.224; 	// 5 m/S^2 as required
+						}
+
 
 
           	
