@@ -258,7 +258,7 @@ int main() {
 						bool LeftCar  			= false;
 						bool RightCar 			= false;
 						double SameLaneSafeDistance = 30.0;
-						double DifferentLaneSafeDistance = 10.0;
+						double DifferentLaneSafeDistance = 5.0;
 						bool S_Gap;
 
 						// Build the Finite State Machine for the Car Motion
@@ -305,13 +305,13 @@ int main() {
 									S_Gap = (check_car_s > car_s) && ((check_car_s - car_s) < SameLaneSafeDistance );
 									FrontCar |= S_Gap;
 								}
-								else if (CarLane == lane - 1)
+								else if (CarLane - lane == -1)
 								{
 									// This means that there is a left car
 									S_Gap = (check_car_s > car_s - DifferentLaneSafeDistance) && ((car_s + SameLaneSafeDistance) > check_car_s);
 									LeftCar |= S_Gap;
 								}
-								else if (CarLane == lane + 1)
+								else if (CarLane - lane == 1)
 								{
 									// This means that there is a right car
 									S_Gap = (check_car_s > car_s - DifferentLaneSafeDistance) && ((car_s + SameLaneSafeDistance) > check_car_s);
@@ -371,7 +371,7 @@ int main() {
 
           	
 
-          	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+          				// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
 						
 						// Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
 						// Later we will interpolate these waypoints with a spline and fill it in with more points that control speed
@@ -452,7 +452,7 @@ int main() {
 
 						// Define the actual (x,y) points we will use for the planner
 						vector<double> next_x_vals;
-          	vector<double> next_y_vals;
+          				vector<double> next_y_vals;
 
 						// Start with all of teh previous path points from the last time
 						for (int i = 0; i < previous_path_x.size(); i++)
