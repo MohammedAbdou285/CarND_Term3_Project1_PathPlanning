@@ -276,7 +276,7 @@ int main() {
 								}
 								else if (d > 4.0 && d < 8.0)
 								{
-										CarLane = 1; // middle Car Lane front of ego
+										CarLane = 1; // middle Car Lane
 								}
 								else if (d > 8.0 && d < 12.0)
 								{

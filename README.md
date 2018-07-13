@@ -60,6 +60,52 @@ the path has processed since last time.
 
 2. There will be some latency between the simulator running and the path planner returning a path, with optimized code usually its not very long maybe just 1-3 time steps. During this delay the simulator will continue using points that it was last given, because of this its a good idea to store the last points you have used so you can have a smooth transition. previous_path_x, and previous_path_y can be helpful for this transition since they show the last points given to the simulator controller with the processed points already removed. You would either return a path that extends this previous path or make sure to create a new path that has a smooth transition with this last path.
 
+## Path Planning Rubric Points
+Going through the rubric points for the path planning project
+
+### Compilation
+The code is compiling without error without errors with cmake and make. In addition to that, no changes are done in the CMakeList.txt.
+
+### Valid Trajectories
+#### The car is able to drive at least 4.32 miles without incidents
+As shown in the top right of the following figure, the car drives (5.14) miles without incidents. 
+<center><img src="No_Incident.png" ></center>
+
+#### The car drives according to the speed limit
+As shown in the down right of the following figure, the car obeys the max speed limit which is (50) MPH. This figure is chosen in order to prove that when there is no obstavle in front of the car, it also does not drive faster than the speed limit.  
+<center><img src="Max_Speed.png" ></center>
+
+#### Max Accelration and Jerk are not exceeded
+The car does not exceed a total acceleration of 10 m/S^2 and a Jerk of 10 m/S^3.
+
+#### Car does not have collisions
+The car does not come into contact with any of the other cars on the road.
+
+#### The car stays in its lane, except for the time between changing lanes
+The car does not spend more than a 3 second length out side the lane lanes during changing lanes, and every other time the car stays inside one of the 3 lanes on the right hand side of the road.
+
+#### The car is able to change lanes
+As shown in the following figure, the car is able to smoothly change lanes when it makes sense to do so, such as when behind a slower moving car and an adjacent lane is clear of other traffic.
+<center><img src="Change_Lane.png" ></center>
+
+
+### Reflection
+In this part we will discuss in details the code model for generating paths.
+
+#### Localization and Prediction Part: Lines (257-320)
+Localization depends on Car States, and Sensor Fusion Data. Firstly, we depend on changing Fernet (d-component) into Lanes through the information of (Lane Width = 4m). This means that the first left lane ranges from 0 to 4 and the secong middle lane ranges from 4 to 8 and the last right lane ranges from 8 to 12, so we do not need to take other vehciles out of this range (i.e. 0 to 12) into our consideration. After that we calculated the distances of the other vehciles, detected by sensors, away from the ego vehcile. Then, we set some conditions to set 3 main flags:
+
+* **FrontCar** is set when there is a car in front of our vehcile, so there must be an action must be taken in order to avoid collision.
+* **LeftCar** is set when there is a car in the left lane of our vehcile's lane, so there will be a collsion if left lane change action is taken.
+* **RightCar** is set when there is a car in the right lane of our vehcile's lane, so there will be a collsion if right lane change action is taken.
+
+#### Behavior Planning FSM Part: Lines (322-370)
+Based on the previous flags, we construct a Finite State Machine in order to cover the majority of the whole cases instead of using Complex Cost Functions. The constructed Finite State Machine covers: keep going on the same lane with acceleration or deceleraion, left/right lane change then come back to the same lane.
+
+#### Trajectory Generation Part: Lines (374-494)
+It is exactly like Walkthrough part video. In this part, the trajectory path is generated and sent to the simulator. The fist two points are considered as the last two points of the old path. The trajectory is generated from **three** 30m spaced points. Sline library is used here in order to generate the whole points of the trajectory depending on including (spline.h) header file to the project. WayPoints are extracted as the first 30m of the spline, and sent to the simulator. The distance between the path points is kept equals to (0.02 * Ref_vel / 2.24) in orer to keep the velocity constant and don not exceed the Speed Limit (50 MPH). 
+**Note:** 2.24 to covert miles per hour to meters per second.   
+
 ## Tips
 
 A really helpful resource for doing this project and creating smooth trajectories was using http://kluge.in-chemnitz.de/opensource/spline/, the spline function is in a single hearder file is really easy to use.
